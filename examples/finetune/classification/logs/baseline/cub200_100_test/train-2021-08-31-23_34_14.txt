@@ -1,0 +1,38 @@
+Namespace(arch='AutoGrowCifarPlainNet', batch_size=48, data='CUB200', epochs=20, iters_per_epoch=500, log='logs/baseline/cub200_100_test', lr=0.01, lr_decay_epochs=(12,), lr_gamma=0.1, momentum=0.9, phase='train', pretrained='/DATA/arjun_ashok/files/lifelong/avalanche-veniat/autogrow/results/2021-08-31_20-07-04/best_ckpt.t7', print_freq=100, root='data/cub200', sample_rate=100, seed=0, wd=0.0005, workers=2)
+baseline.py:36: UserWarning: You have chosen to seed training. This will turn on the CUDNN deterministic setting, which can slow down your training considerably! You may see unexpected behavior when restarting from checkpoints.
+  warnings.warn('You have chosen to seed training. '
+=> using pre-trained model 'AutoGrowCifarPlainNet'
+num_classes=10, image_channels=3
+/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/optim/lr_scheduler.py:416: UserWarning: To get the last learning rate computed by the scheduler, please use `get_last_lr()`.
+  warnings.warn("To get the last learning rate computed by the scheduler, "
+[0.001, 0.01, 0.01]
+Epoch: [0][  0/500]	Time 0.78 (0.78)	Data 0.0 (0.0)	Loss 5.36 (5.36)	Cls Acc 0.0 (0.0)
+Epoch: [0][100/500]	Time 0.55 (0.24)	Data 0.5 (0.2)	Loss 5.33 (5.33)	Cls Acc 0.0 (0.6)
+Traceback (most recent call last):
+  File "baseline.py", line 269, in <module>
+    main(args)
+  File "baseline.py", line 109, in main
+    train(train_iter, classifier, optimizer, epoch, args)
+  File "baseline.py", line 141, in train
+    x, labels = next(train_iter)
+  File "../../../common/utils/data.py", line 41, in __next__
+    data = next(self.iter)
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 521, in __next__
+    data = self._next_data()
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1186, in _next_data
+    idx, data = self._get_data()
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1152, in _get_data
+    success, data = self._try_get_data()
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 990, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/multiprocessing/queues.py", line 107, in get
+    if not self._poll(timeout):
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/multiprocessing/connection.py", line 257, in poll
+    return self._poll(timeout)
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/multiprocessing/connection.py", line 424, in _poll
+    r = wait([self], timeout)
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/multiprocessing/connection.py", line 930, in wait
+    ready = selector.select(timeout)
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt

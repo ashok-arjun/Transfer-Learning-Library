@@ -1,0 +1,19 @@
+Namespace(arch='resnet50', batch_size=48, data='CUB200', epochs=20, iters_per_epoch=500, log='logs/baseline/cub200_100_test', lr=0.01, lr_decay_epochs=(12,), lr_gamma=0.1, momentum=0.9, phase='train', pretrained=None, print_freq=100, residual='CifarPlainNet', root='data/cub200', sample_rate=100, seed=0, wd=0.0005, workers=2)
+baseline.py:36: UserWarning: You have chosen to seed training. This will turn on the CUDNN deterministic setting, which can slow down your training considerably! You may see unexpected behavior when restarting from checkpoints.
+  warnings.warn('You have chosen to seed training. '
+=> using pre-trained model 'resnet50'
+/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/optim/lr_scheduler.py:416: UserWarning: To get the last learning rate computed by the scheduler, please use `get_last_lr()`.
+  warnings.warn("To get the last learning rate computed by the scheduler, "
+[0.001, 0.01, 0.01]
+/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/nn/functional.py:718: UserWarning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (Triggered internally at  /pytorch/c10/core/TensorImpl.h:1156.)
+  return torch.max_pool2d(input, kernel_size, stride, padding, dilation, ceil_mode)
+Epoch: [0][  0/500]	Time 1.62 (1.62)	Data 0.0 (0.0)	Loss 5.42 (5.42)	Cls Acc 0.0 (0.0)
+Epoch: [0][100/500]	Time 0.27 (0.28)	Data 0.1 (0.1)	Loss 3.24 (4.61)	Cls Acc 25.0 (10.6)
+Traceback (most recent call last):
+  File "baseline.py", line 270, in <module>
+    main(args)
+  File "baseline.py", line 108, in main
+    train(train_iter, classifier, optimizer, epoch, args)
+  File "baseline.py", line 142, in train
+    x = x.to(device)
+KeyboardInterrupt

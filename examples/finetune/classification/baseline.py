@@ -68,11 +68,24 @@ def main(args: argparse.Namespace):
 
     # create model
     print("=> using pre-trained model '{}'".format(args.arch))
-    backbone = models.__dict__[args.arch](pretrained=True)
-    if args.pretrained:
-        print("=> loading pre-trained model from '{}'".format(args.pretrained))
+
+    if args.arch.startswith("AutoGrow"):
+        if not args.pretrained:
+            raise Exception("AutoGrow needs pretrained model")
+            
         pretrained_dict = torch.load(args.pretrained)
-        backbone.load_state_dict(pretrained_dict, strict=False)
+        residual = args.arch if "residual" not in pretrained_dict.keys() else pretrained_dict["residual"]
+
+        current_arch = pretrained_dict["current_arch"]
+        current_arch = list(map(int, current_arch.split("-")))
+        backbone = models.__dict__[residual](current_arch)
+        backbone.load_state_dict(pretrained_dict['net'], strict=False) # NOTE: sometimes it does not match
+    else:
+        backbone = models.__dict__[args.arch](pretrained=True)
+        if args.pretrained:
+            print("=> loading pre-trained model from '{}'".format(args.pretrained))
+            pretrained_dict = torch.load(args.pretrained, map_location=device)
+            backbone.load_state_dict(pretrained_dict, strict=False)
     num_classes = train_dataset.num_classes
     classifier = Classifier(backbone, num_classes).to(device)
 
@@ -201,7 +214,7 @@ def validate(val_loader: DataLoader, model: Classifier, args: argparse.Namespace
 if __name__ == '__main__':
     architecture_names = sorted(
         name for name in models.__dict__
-        if name.islower() and not name.startswith("__")
+        if not name.startswith("__")
         and callable(models.__dict__[name])
     )
     dataset_names = sorted(

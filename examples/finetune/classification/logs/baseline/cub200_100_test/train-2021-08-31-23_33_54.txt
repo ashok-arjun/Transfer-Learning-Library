@@ -1,0 +1,15 @@
+Namespace(arch='AutoGrowCifarPlainNet', batch_size=48, data='CUB200', epochs=20, iters_per_epoch=500, log='logs/baseline/cub200_100_test', lr=0.01, lr_decay_epochs=(12,), lr_gamma=0.1, momentum=0.9, phase='train', pretrained='/DATA/arjun_ashok/files/lifelong/avalanche-veniat/autogrow/results/2021-08-31_20-07-04/best_ckpt.t7', print_freq=100, root='data/cub200', sample_rate=100, seed=0, wd=0.0005, workers=2)
+baseline.py:36: UserWarning: You have chosen to seed training. This will turn on the CUDNN deterministic setting, which can slow down your training considerably! You may see unexpected behavior when restarting from checkpoints.
+  warnings.warn('You have chosen to seed training. '
+=> using pre-trained model 'AutoGrowCifarPlainNet'
+num_classes=10, image_channels=3
+Traceback (most recent call last):
+  File "baseline.py", line 269, in <module>
+    main(args)
+  File "baseline.py", line 90, in main
+    classifier = Classifier(backbone, num_classes).to(device)
+  File "../../../common/modules/classifier.py", line 53, in __init__
+    self._features_dim = backbone.out_features
+  File "/home/arjun_ashok/anaconda3/envs/avalanche-env/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1130, in __getattr__
+    raise AttributeError("'{}' object has no attribute '{}'".format(
+AttributeError: 'CifarResNet' object has no attribute 'out_features'

@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Supervised Pretraining
 # CUB-200-2011
 CUDA_VISIBLE_DEVICES=0 python baseline.py data/cub200 -d CUB200 -sr 100 --seed 0 --log logs/baseline/cub200_100
