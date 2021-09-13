@@ -1,0 +1,16 @@
+Namespace(arch='resnet50', batch_size=48, data=None, epochs=20, iters_per_epoch=500, log='baseline', lr=0.01, lr_gamma=0.1, lr_patience=3, momentum=0.9, phase='train', pretrained=None, print_freq=100, root='data/cub200,data/stanford_cars,data/aircraft', run_name='', sample_rate=100, seed=None, wd=0.0005, workers=2)
+Traceback (most recent call last):
+  File "baseline.py", line 332, in <module>
+    main(args)
+  File "baseline.py", line 65, in main
+    if len(args.data.split(",")) > 1:
+AttributeError: 'NoneType' object has no attribute 'split'
+
+wandb: Waiting for W&B process to finish, PID 20641
+wandb: Program failed with code 1.  Press ctrl-c to abort syncing.
+wandb: - 0.03MB of 0.03MB uploaded (0.00MB deduped)wandb: \ 0.03MB of 0.03MB uploaded (0.00MB deduped)wandb: | 0.03MB of 0.03MB uploaded (0.00MB deduped)wandb: / 0.03MB of 0.04MB uploaded (0.00MB deduped)wandb: - 0.03MB of 0.04MB uploaded (0.00MB deduped)wandb: \ 0.03MB of 0.04MB uploaded (0.00MB deduped)wandb: | 0.03MB of 0.04MB uploaded (0.00MB deduped)wandb: / 0.03MB of 0.04MB uploaded (0.00MB deduped)wandb: - 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: \ 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: | 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: / 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: - 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: \ 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: | 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: / 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb: - 0.04MB of 0.04MB uploaded (0.00MB deduped)wandb:                                                                                
+wandb: Find user logs for this run at: /DATA/arjun_ashok/files/lifelong/avalanche-veniat/Transfer-Learning-Library/examples/finetune/classification/wandb/run-20210901_210037-1phu0zeg/logs/debug.log
+wandb: Find internal logs for this run at: /DATA/arjun_ashok/files/lifelong/avalanche-veniat/Transfer-Learning-Library/examples/finetune/classification/wandb/run-20210901_210037-1phu0zeg/logs/debug-internal.log
+wandb: Synced 7 W&B file(s), 0 media file(s), 0 artifact file(s) and 1 other file(s)
+wandb: 
+wandb: Synced rare-breeze-14: https://wandb.ai/arjunashok/transfer-learning/runs/1phu0zeg

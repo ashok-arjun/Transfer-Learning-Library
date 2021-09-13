@@ -131,3 +131,9 @@ exp/*
 trash/*
 examples/domain_adaptation/digits/logs/*
 examples/domain_adaptation/digits/data/*
+
+data
+checkpoints
+
+wandb
+logs

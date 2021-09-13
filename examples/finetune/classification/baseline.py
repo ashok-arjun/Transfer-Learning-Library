@@ -11,6 +11,9 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
 import torch.nn.functional as F
+import os
+
+import wandb
 
 sys.path.append('../../..')
 from common.modules.classifier import Classifier
@@ -21,25 +24,26 @@ from common.utils.metric import accuracy
 from common.utils.meter import AverageMeter, ProgressMeter
 from common.utils.data import ForeverDataIterator
 from common.utils.logger import CompleteLogger
+from common.utils.seeder import set_seed
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+if "CUDA_VISIBLE_DEVICES" not in os.environ:
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 def main(args: argparse.Namespace):
     logger = CompleteLogger(args.log, args.phase)
     print(args)
 
+    global_step = 0
+
     if args.seed is not None:
-        random.seed(args.seed)
-        torch.manual_seed(args.seed)
-        cudnn.deterministic = True
+        set_seed(args.seed)
         warnings.warn('You have chosen to seed training. '
                       'This will turn on the CUDNN deterministic setting, '
                       'which can slow down your training considerably! '
                       'You may see unexpected behavior when restarting '
                       'from checkpoints.')
-
-    cudnn.benchmark = True
 
     # Data loading code
     normalize = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -57,67 +61,122 @@ def main(args: argparse.Namespace):
         normalize
     ])
 
-    dataset = datasets.__dict__[args.data]
-    train_dataset = dataset(root=args.root, split='train', sample_rate=args.sample_rate,
-                            download=True, transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.workers, drop_last=True)
-    train_iter = ForeverDataIterator(train_loader)
-    val_dataset = dataset(root=args.root, split='test', sample_rate=100, download=True, transform=val_transform)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers)
 
-    # create model
-    print("=> using pre-trained model '{}'".format(args.arch))
-
-    if args.arch.startswith("AutoGrow"):
-        if not args.pretrained:
-            raise Exception("AutoGrow needs pretrained model")
-            
-        pretrained_dict = torch.load(args.pretrained)
-        residual = args.arch if "residual" not in pretrained_dict.keys() else pretrained_dict["residual"]
-
-        current_arch = pretrained_dict["current_arch"]
-        current_arch = list(map(int, current_arch.split("-")))
-        backbone = models.__dict__[residual](current_arch)
-        backbone.load_state_dict(pretrained_dict['net'], strict=False) # NOTE: sometimes it does not match
+    if len(args.data.split(",")) > 1:
+        current_datasets = args.data.split(",")
+        current_datasets_directories = args.root.split(",")
     else:
-        backbone = models.__dict__[args.arch](pretrained=True)
-        if args.pretrained:
-            print("=> loading pre-trained model from '{}'".format(args.pretrained))
-            pretrained_dict = torch.load(args.pretrained, map_location=device)
-            backbone.load_state_dict(pretrained_dict, strict=False)
-    num_classes = train_dataset.num_classes
-    classifier = Classifier(backbone, num_classes).to(device)
+        current_datasets = [args.data]
+        current_datasets_directories = [args.root]
 
-    # define optimizer and lr scheduler
-    optimizer = SGD(classifier.get_parameters(args.lr), lr=args.lr, momentum=args.momentum, weight_decay=args.wd, nesterov=True)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, args.lr_decay_epochs, gamma=args.lr_gamma)
+    for i in range(len(current_datasets)):
 
-    # resume from the best checkpoint
-    if args.phase == 'test':
-        checkpoint = torch.load(logger.get_checkpoint_path('best'), map_location='cpu')
-        classifier.load_state_dict(checkpoint)
-        acc1 = validate(val_loader, classifier, args)
-        print(acc1)
-        return
+        print("Dataset: ", current_datasets[i])
 
-    # start training
-    best_acc1 = 0.0
-    for epoch in range(args.epochs):
-        print(lr_scheduler.get_lr())
-        # train for one epoch
-        train(train_iter, classifier, optimizer, epoch, args)
-        lr_scheduler.step()
-        # evaluate on validation set
-        acc1 = validate(val_loader, classifier, args)
+        dataset = datasets.__dict__[current_datasets[i]]
+        train_dataset = dataset(root=current_datasets_directories[i], split='train', sample_rate=args.sample_rate,
+                                download=True, transform=train_transform)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+                                num_workers=args.workers, drop_last=True)
+        train_iter = ForeverDataIterator(train_loader)
+        val_dataset = dataset(root=current_datasets_directories[i], split='test', sample_rate=100, download=True, transform=val_transform)
+        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers)
 
-        # remember best acc@1 and save checkpoint
-        torch.save(classifier.state_dict(), logger.get_checkpoint_path('latest'))
-        if acc1 > best_acc1:
-            shutil.copy(logger.get_checkpoint_path('latest'), logger.get_checkpoint_path('best'))
-        best_acc1 = max(acc1, best_acc1)
+        # create model
+        print("=> using pre-trained model '{}'".format(args.arch))
 
-    print("best_acc1 = {:3.1f}".format(best_acc1))
+        if args.arch.startswith("AutoGrow"):
+            if not args.pretrained:
+                raise Exception("AutoGrow needs pretrained model")
+                
+            pretrained_dict = torch.load(args.pretrained)
+            residual = pretrained_dict["residual"]
+            print("Residual taken from pretrained_dict: ", residual)
+
+            current_arch = pretrained_dict["current_arch"]
+            current_arch = list(map(int, current_arch.split("-")))
+            backbone = models.__dict__["AutoGrow" + residual](current_arch)
+
+            if 'module' in pretrained_dict['net'].keys()[0]:
+                from collections import OrderedDict
+                new_state_dict = OrderedDict()
+                for k, v in pretrained_dict['net'].items():
+                    name = k[7:] # remove `module.`
+                    new_state_dict[name] = v
+                pretrained_dict['net'] = new_state_dict
+
+            backbone.load_state_dict(pretrained_dict['net'], strict=False) # NOTE: sometimes it does not match
+        else:
+            backbone = models.__dict__[args.arch](pretrained=True)
+            if args.pretrained:
+                print("=> loading pre-trained model from '{}'".format(args.pretrained))
+                pretrained_dict = torch.load(args.pretrained, map_location=device)
+                backbone.load_state_dict(pretrained_dict, strict=False)
+        num_classes = train_dataset.num_classes
+
+        classifier = Classifier(backbone, num_classes)
+
+
+        if torch.cuda.device_count() > 1 and args.phase != "test":
+            print("***USING GPUs:", os.environ["CUDA_VISIBLE_DEVICES"], "***")
+            classifier = torch.nn.DataParallel(classifier)
+
+        classifier.to(device)
+
+        # define optimizer and lr scheduler
+        optimizer = SGD(classifier.get_parameters(args.lr), lr=args.lr, momentum=args.momentum, weight_decay=args.wd, nesterov=True)
+
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", patience=args.lr_patience, \
+            factor=args.lr_gamma)
+
+        # resume from the best checkpoint
+        if args.phase == 'test':
+            checkpoint = torch.load(logger.get_checkpoint_path('best'), map_location=device)
+            classifier.load_state_dict(checkpoint)
+            acc1 = validate(val_loader, classifier, args)
+            print(acc1)
+            return
+
+        # start training
+        best_test_acc = 0.0
+        for epoch in range(args.epochs):
+            # increment step
+            global_step += 1
+
+            # train for one epoch
+            train_loss, train_acc = train(train_iter, classifier, optimizer, epoch, args)
+            # evaluate on validation set
+            test_loss, test_acc = validate(val_loader, classifier, args)
+
+            lr_scheduler.step(test_acc)
+
+            # remember best acc@1 and save checkpoint
+            torch.save(classifier.state_dict() if type(classifier) != \
+                torch.nn.DataParallel else classifier.module.state_dict(), logger.get_checkpoint_path('latest'))
+            if test_acc > best_test_acc:
+                shutil.copy(logger.get_checkpoint_path('latest'), logger.get_checkpoint_path('best'))
+            best_test_acc = max(test_acc, best_test_acc)
+
+            lr = optimizer.param_groups[0]['lr']
+            print("LR: ", lr)
+            wandb.log({"lr": lr}, step=global_step)
+
+            if lr <= 1e-6:
+                print("LR lesser than 1e-6. Breaking...")
+                break
+
+            wandb.log({current_datasets[i] + "/" + "train/loss": train_loss, current_datasets[i] \
+                + "/" + "train/acc": train_acc, \
+                current_datasets[i] + "/" + "epoch": epoch}, step=global_step)
+
+            wandb.log({current_datasets[i] + "/" + "test/loss": test_loss, current_datasets[i] \
+                + "/" + "test/acc": test_acc, \
+                current_datasets[i] + "/" + "test/best_acc": best_test_acc, current_datasets[i] \
+                    + "/" + "epoch": epoch}, step=global_step)
+
+            print("best_test_acc = {:3.1f}".format(best_test_acc))
+    
+    
     logger.close()
 
 
@@ -168,6 +227,7 @@ def train(train_iter: ForeverDataIterator, model: Classifier, optimizer: SGD,
         if i % args.print_freq == 0:
             progress.display(i)
 
+    return losses.avg, cls_accs.avg
 
 def validate(val_loader: DataLoader, model: Classifier, args: argparse.Namespace) -> float:
     batch_time = AverageMeter('Time', ':6.3f')
@@ -208,7 +268,7 @@ def validate(val_loader: DataLoader, model: Classifier, args: argparse.Namespace
         print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
               .format(top1=top1, top5=top5))
 
-    return top1.avg
+    return losses.avg, top1.avg
 
 
 if __name__ == '__main__':
@@ -216,7 +276,7 @@ if __name__ == '__main__':
         name for name in models.__dict__
         if not name.startswith("__")
         and callable(models.__dict__[name])
-    )
+    ) + ["AutoGrow"]
     dataset_names = sorted(
         name for name in datasets.__dict__
         if not name.startswith("__") and callable(datasets.__dict__[name])
@@ -246,7 +306,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
                         metavar='LR', help='initial learning rate', dest='lr')
     parser.add_argument('--lr-gamma', default=0.1, type=float, help='parameter for lr scheduler')
-    parser.add_argument('--lr-decay-epochs', type=int, default=(12, ), nargs='+', help='epochs to decay lr')
+    parser.add_argument('--lr-patience', type=int, default=3, help='epochs to decay lr')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                         help='momentum')
     parser.add_argument('--wd', '--weight-decay', default=0.0005, type=float,
@@ -265,6 +325,15 @@ if __name__ == '__main__':
                         help="Where to save logs, checkpoints and debugging images.")
     parser.add_argument("--phase", type=str, default='train', choices=['train', 'test'],
                         help="When phase is 'test', only test the model.")
+    parser.add_argument("--run-name", type=str, default='', 
+                    help="When phase is 'test', only test the model.")
     args = parser.parse_args()
+
+    wandb.init(project="transfer-learning", entity="arjunashok", config=vars(args))
+    if args.run_name:
+        wandb.run.name = args.run_name
+    wandb.config.update({"gpus": os.environ["CUDA_VISIBLE_DEVICES"]}, allow_val_change=True)
+
     main(args)
 
+    wandb.finish()

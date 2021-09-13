@@ -1,9 +1,10 @@
-torch>=1.7.0
-torchvision
+# torch>=1.7.0
+# torchvision
 qpsolvers
-numpy
+# numpy
 prettytable
 tqdm
 scikit-learn
 webcolors
 matplotlib
+wandb
