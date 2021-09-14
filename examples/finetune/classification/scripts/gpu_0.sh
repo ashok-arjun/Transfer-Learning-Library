@@ -13,12 +13,19 @@
 # --run-name "CIFAR100-Plain-K3"
 
 
-CUDA_VISIBLE_DEVICES=0 python baseline.py "data/cub200,data/stanford_cars,data/aircraft" \
+# CUDA_VISIBLE_DEVICES=0 python baseline.py "data/cub200,data/stanford_cars,data/aircraft" \
+# -d "CUB200,StanfordCars,Aircraft" -sr 100 --seed 0 \
+# --epochs 500 --lr-patience 10 --workers 20 --batch-size 16 --log "logs/" \
+# --arch "AutoGrow" \
+# --pretrained "/DATA/arjun_ashok/files/lifelong/avalanche-veniat/autogrow/results/CIFAR100-Plain-K3-BASELINE2021-09-01_11-09-45/baseline/_best_ckpt.t7" \
+# --run-name "CIFAR100-Plain-K3-BASELINE"
+
+CUDA_VISIBLE_DEVICES=0,1 python baseline.py "data/cub200,data/stanford_cars,data/aircraft" \
 -d "CUB200,StanfordCars,Aircraft" -sr 100 --seed 0 \
---epochs 500 --lr-patience 10 --workers 20 --batch-size 16 --log "logs/" \
+--epochs 500 --lr-patience 10 --workers 32 --batch-size 16 --log "logs/" \
 --arch "AutoGrow" \
---pretrained "/DATA/arjun_ashok/files/lifelong/avalanche-veniat/autogrow/results/CIFAR100-Plain-K3-BASELINE2021-09-01_11-09-45/baseline/_best_ckpt.t7" \
---run-name "CIFAR100-Plain-K3-BASELINE"
+--pretrained "/DATA/arjun_ashok/files/lifelong/avalanche-veniat/Transfer-Learning-Library/autogrow_models/tinyImageNet-DDP-K2-ImageNetResNetBasic/_best_ckpt.t7" \
+--run-name "tinyImageNet-DDP-K2-ImageNetResNetBasic"
 
 
 # """CIFAR100-Plain-K10"""

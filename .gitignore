@@ -137,3 +137,5 @@ checkpoints
 
 wandb
 logs
+
+autogrow_models

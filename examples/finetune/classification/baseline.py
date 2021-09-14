@@ -97,7 +97,7 @@ def main(args: argparse.Namespace):
             current_arch = list(map(int, current_arch.split("-")))
             backbone = models.__dict__["AutoGrow" + residual](current_arch)
 
-            if 'module' in pretrained_dict['net'].keys()[0]:
+            if 'module' in list(pretrained_dict['net'].keys())[0]:
                 from collections import OrderedDict
                 new_state_dict = OrderedDict()
                 for k, v in pretrained_dict['net'].items():
@@ -120,11 +120,15 @@ def main(args: argparse.Namespace):
         if torch.cuda.device_count() > 1 and args.phase != "test":
             print("***USING GPUs:", os.environ["CUDA_VISIBLE_DEVICES"], "***")
             classifier = torch.nn.DataParallel(classifier)
+            DATAPARALLEL=True
+        else:
+            DATAPARALLEL=False
 
         classifier.to(device)
 
         # define optimizer and lr scheduler
-        optimizer = SGD(classifier.get_parameters(args.lr), lr=args.lr, momentum=args.momentum, weight_decay=args.wd, nesterov=True)
+        params = classifier.get_parameters(args.lr) if not DATAPARALLEL else classifier.module.get_parameters(args.lr)
+        optimizer = SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.wd, nesterov=True)
 
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", patience=args.lr_patience, \
             factor=args.lr_gamma)
